@@ -44,11 +44,11 @@ src/
 data/                 ← generated puzzle + content JSON
 tools/
   build.js            ← bundles src/ → beast-chess.html
-  site.js             ← builds ./site (landing page + play.html) for GitHub Pages
+  site.js             ← generates index.html (landing) + play.html for GitHub Pages
   gen-puzzles.js      ← puzzle generator/verifier
   gen-content.js      ← content verifier (must report 0 problems)
 tests/perft.js        ← move-generation correctness (perft) suite
-site/                 ← generated: published to GitHub Pages
+index.html, play.html ← generated: the published GitHub Pages site
 ```
 
 ## Rebuilding
@@ -57,7 +57,7 @@ site/                 ← generated: published to GitHub Pages
 node tests/perft.js        # engine correctness — expect ALL PERFT TESTS PASS
 node tools/gen-content.js  # content validation — expect PROBLEMS: 0
 node tools/build.js        # → beast-chess.html
-node tools/site.js         # → site/index.html + site/play.html + site/og.png
+node tools/site.js         # → index.html (landing) + play.html (the app)
 ```
 
 ## How it was verified
