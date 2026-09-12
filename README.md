@@ -4,6 +4,8 @@
 
 A complete chess training system for people who have never played — and a hard 7-day crash course for people who want to win a district-level match next week.
 
+![The guided first game: the coach tells you every move, in plain English](screenshot-guided.png)
+
 Everything runs in **one self-contained HTML file**. No signup, no server, no CDN, no analytics. Download it, open it, and it works offline (including saving your progress, XP and 7-day plan in your own browser).
 
 ---
