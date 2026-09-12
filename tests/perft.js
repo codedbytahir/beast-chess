@@ -30,4 +30,31 @@ console.log('SAN sample:', B.toSAN(s, B.uciToMove(s, 'e2e4')), B.toSAN(s, B.uciT
 s = B.parseFEN('r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1');
 console.log('castle SAN:', B.toSAN(s, B.uciToMove(s, 'e1g1')));
 console.log('mate in 1 solver:', JSON.stringify(B.mateIn(B.parseFEN('6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1'), 1) ? 'found' : 'none'));
+/* --- kings are never capturable (the app must never offer "Kxe8") --- */
+(function kingSafety() {
+  const B2 = require('../src/engine.js');
+  const fens = [
+    'R5k1/5ppp/8/8/8/8/5PPP/6K1 b - - 1 1',                       /* mate already on the board */
+    'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1',
+    '4k3/8/8/8/8/8/8/4K2R w - - 0 1',
+    '8/8/8/8/8/8/5k2/6q1 w - - 0 1'
+  ];
+  let bad = 0, scanned = 0;
+  fens.forEach((f) => {
+    const st = B2.parseFEN(f);
+    for (let sq = 0; sq < 64; sq++) {
+      const p = st.board[sq];
+      if (!p) continue;
+      const work = B2.clone(st);
+      work.turn = p[0];                                          /* forced turn = lesson-sandbox behaviour */
+      B2.legalMoves(work).forEach((m) => {
+        scanned++;
+        if (m.captured && m.captured.charAt(1).toLowerCase() === 'k') bad++;
+      });
+    }
+  });
+  console.log(`king-capture guard: ${scanned} moves scanned, ${bad} illegal king captures`);
+  if (bad) fails++;
+})();
+
 console.log(fails === 0 ? 'ALL PERFT TESTS PASS' : `${fails} FAILURES`);
