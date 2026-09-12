@@ -350,6 +350,32 @@ summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--gold2)}
 .i-eye{--s:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2.5%2012S6%205.8%2012%205.8%2021.5%2012%2021.5%2012%2018%2018.2%2012%2018.2%202.5%2012%202.5%2012z%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22%2F%3E%3C%2Fsvg%3E")}
 .i-hand{--s:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%2011V5.6a1.6%201.6%200%200%201%203.2%200V11%22%2F%3E%3Cpath%20d%3D%22M12.2%2011V4.8a1.6%201.6%200%200%201%203.2%200V11%22%2F%3E%3Cpath%20d%3D%22M15.4%2011.4V6.9a1.6%201.6%200%200%201%203.2%200v7.4c0%204.2-2.5%207-6.4%207-3.2%200-5.4-1.7-6.6-4.6L4%2013.2c-.5-1.1.2-2.2%201.3-2.3.7-.1%201.3.2%201.7.8L9%2014.5%22%2F%3E%3C%2Fsvg%3E")}
 .i-plus{--s:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%204.5v15M4.5%2012h15%22%2F%3E%3C%2Fsvg%3E")}
+
+/* ---------- big board signs: CHECKMATE / CHECK / DRAW ---------- */
+.stamp-layer{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:6;padding:6%}
+.stamp-layer[hidden]{display:none!important}
+.stamp{display:flex;flex-direction:column;align-items:center;gap:.35em;padding:.5em .9em;border-radius:.5em;
+  transform:rotate(-7deg);text-align:center;max-width:96%;box-sizing:border-box;
+  background:#0d1219;border:3px solid var(--gold);box-shadow:0 20px 48px rgba(0,0,0,.75),0 0 0 7px rgba(6,9,14,.55)}
+.stamp b{letter-spacing:.05em;line-height:1.05;color:var(--gold);text-transform:uppercase;white-space:nowrap}
+.stamp span{line-height:1.3;color:#dbe6f8;font-weight:600;text-align:center}
+.stamp.pop{animation:stampPop .42s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes stampPop{0%{transform:rotate(-7deg) scale(.5);opacity:0}60%{transform:rotate(-7deg) scale(1.08)}100%{transform:rotate(-7deg) scale(1);opacity:1}}
+.stamp-layer.k-mate .stamp{border-color:var(--gold);background:#1c1202}
+.stamp-layer.k-mate .stamp b{color:var(--gold)}
+.stamp-layer.k-lose .stamp{border-color:#ff6b6b;background:#1c0d0d}
+.stamp-layer.k-lose .stamp b{color:#ff8b8b}
+.stamp-layer.k-check .stamp{padding:.35em .9em;border-width:3px;border-color:#ffb020;background:#241800}
+.stamp-layer.k-check .stamp b{font-size:1.05em;color:#ffc861}
+.stamp-layer.k-draw .stamp{border-color:#9fb0cc;background:#0f141c}
+.stamp-layer.k-draw .stamp b{color:#dbe6f8}
+.cell.mated{background:rgba(200,40,40,.55)!important;animation:matedPulse 1.1s ease-in-out infinite alternate}
+.cell.mated .pc{filter:drop-shadow(0 0 8px rgba(255,80,80,.95))}
+.cell.checked{background:rgba(255,170,0,.42)!important}
+.cell.checked .pc{filter:drop-shadow(0 0 7px rgba(255,190,60,.9))}
+@keyframes matedPulse{from{box-shadow:inset 0 0 0 3px rgba(255,70,70,.45)}to{box-shadow:inset 0 0 22px 6px rgba(255,70,70,.75)}}
+.result-big{font-size:19px;font-weight:800;letter-spacing:.4px;margin-bottom:6px}
+.result-sub{color:var(--muted);font-size:14px;margin-bottom:10px}
 </style>
 <meta name="description" content="Beast Chess — a free 7-day zero-to-hero chess crash course. Learn the rules from scratch, play a built-in AI, drill tactics and endgames. No signup, works offline.">
 <meta name="theme-color" content="#0b0f16">

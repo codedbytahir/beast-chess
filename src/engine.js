@@ -279,7 +279,12 @@
       if (!inCheck(s, u.piece[0])) out.push(pseudo[i]);
       unmakeInPlace(s, u);
     }
-    return out;
+    /* A KING IS NEVER CAPTURED. Chess is won by checkmate, not by taking the
+       king off the board. Positions built for teaching (lesson sandboxes, the
+       guided game, drills) force the side to move, and there the generator can
+       otherwise produce "Rxe8" straight onto the enemy king — that move is
+       illegal and must never be offered anywhere in the app. */
+    return out.filter(function (m) { return !(m.captured && m.captured.charAt(1).toLowerCase() === 'k'); });
   }
 
   function makeMove(s, m) {

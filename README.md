@@ -6,6 +6,8 @@ A complete chess training system for people who have never played — and a hard
 
 ![The guided first game: the coach tells you every move, in plain English](screenshot-guided.png)
 
+![Checkmate is stamped across the board, with the trapped king glowing red](shot-mate-sign.png)
+
 Everything runs in **one self-contained HTML file**. No signup, no server, no CDN, no analytics. Download it, open it, and it works offline (including saving your progress, XP and 7-day plan in your own browser).
 
 ---
@@ -23,6 +25,7 @@ Everything runs in **one self-contained HTML file**. No signup, no server, no CD
 | 🪤 **Traps** | 10 classic traps (Scholar's, Fool's, Legal's, Stafford, Englund…) with the antidote for each. |
 | ⚔ **Playbook** | The strategy codex: 6-question blunder firewall, pawn structures, king safety, converting wins. |
 | 🗓 **7-Day Plan** | Day-by-day syllabus with sessions, KPIs and homework. |
+| ⚑ **Result signs** | Every finished game is stamped across the board: **CHECKMATE** (gold, with the mated king glowing red), **CHECK!** when a king is attacked, **DRAW** for stalemate/repetition, **DRILL COMPLETE** in the Endgame Lab. A king is never captured — chess ends by checkmate, and the app now teaches and enforces exactly that. |
 | 📈 **Progress** | XP, ranks, streaks, lesson completion, and a post-game blunder report. A lesson only counts as read (and only pays XP) once you actually engage with it — move a piece in the sandbox or press "I have read this" — so the checkmarks and the "resume where I left off" pointer stay honest. |
 
 ## Start here
@@ -67,7 +70,7 @@ npm start           # serve the site locally on :8080
 The app ships with a regression suite that drives a real browser with real mouse, touch and pointer events:
 
 - **`npm test`** — perft move-generation tests all pass (start position, Kiwipete, position 3, 4); content validation reports 0 problems
-- **`npm run test:e2e`** — 26 checks in a real browser: onboarding wizard, lesson sandboxes, the icon system (every icon painted by an SVG mask), playing a legal move with real pointer events, engine reply, coach log, board squareness, guided-game step advance, all 10 views, easiest-first puzzle ordering, XP persistence across reload, deep links, and touch play on a phone — **0 failures, 0 page errors**
+- **`npm run test:e2e`** — 40 checks in a real browser: onboarding wizard, lesson sandboxes, the icon system (every icon painted by an SVG mask), playing a legal move with real pointer events, engine reply, coach log, board squareness, guided-game step advance, all 10 views, easiest-first puzzle ordering, XP persistence across reload, deep links, touch play on a phone, the mate sign + win popup (by move order number, not by square index), the losing-mate path, the CHECK sign, and a king-capture ban verified by scanning every legal move in a mate-in-progress position — **0 failures, 0 page errors**
 - **Content**: 0 problems across all lessons, traps, openings and drills
 - **Board geometry**: pixel-perfect square board + 64 square cells at 8 viewports (320×560 → 1920×1080), zero page overflow
 - **Flows**: beginner wizard → lessons → guided game → play → all 4 puzzle modes → endgame drills → traps → opening quiz → plan/XP persistence → PGN export — with 0 page errors

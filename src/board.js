@@ -47,8 +47,11 @@
       flipped: orient === 'b'
     };
 
-    var wrap = el('<div class="board-wrap"><div class="board"></div><svg class="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg><div class="promo-layer" hidden></div></div>');
+    var wrap = el('<div class="board-wrap"><div class="board"></div><svg class="arrows" viewBox="0 0 800 800" preserveAspectRatio="none"></svg>' +
+      '<div class="stamp-layer" hidden><div class="stamp"><b></b><span></span></div></div><div class="promo-layer" hidden></div></div>');
     var boardEl = wrap.querySelector('.board');
+    var stampLayer = wrap.querySelector('.stamp-layer');
+    var stampEl = wrap.querySelector('.stamp');
     var svg = wrap.querySelector('.arrows');
     var promoLayer = wrap.querySelector('.promo-layer');
     container.innerHTML = '';
@@ -84,6 +87,7 @@
       wrap.style.height = side + 'px';
       boardEl.style.width = side + 'px';
       boardEl.style.height = side + 'px';
+      if (stampLayer && !stampLayer.hidden) api.setStamp(stampEl.querySelector('b').textContent, stampEl.querySelector('span').textContent, (stampLayer.className.match(/k-(\w+)/) || [])[1]);
       renderArrows();
     }
     api.relayout = function () { layout(); };
@@ -125,6 +129,7 @@
         if (api.selected === sq) cls += ' sel';
         if (api.targets.indexOf(sq) >= 0) marks += '<span class="dot' + (st && st.board[sq] ? ' cap' : '') + '"></span>';
         if (api.checkSquare === sq) cls += ' incheck';
+        if (api.kingMark && api.kingMark.sq === sq) cls += ' ' + (api.kingMark.kind === 'mated' ? 'mated' : 'checked');
         if (api.hints && api.hints.indexOf(sq) >= 0) cls += ' hintable';
         var piece = st && st.board[sq] ? pieceSVG(st.board[sq]) : '';
         var coords = '';
@@ -257,6 +262,58 @@
     api.flip = function (o) { api.flipped = (o || (api.flipped ? 'w' : 'b')) === 'b'; render(); };
     api.name = nameOf;
     api.element = wrap;
+    /* ------------------------------------------------------------------
+       STAMP — a big readable sign across the board: "CHECKMATE",
+       "CHECK!", "DRAW", "DRILL COMPLETE". Beginners need to SEE that the
+       game ended, not read it in a status line.
+       ------------------------------------------------------------------ */
+    api.setStamp = function (text, sub, kind) {
+      if (!stampLayer) return;
+      if (!text) { api.clearStamp(); return; }
+      if (stampTimer) { clearTimeout(stampTimer); stampTimer = null; }
+      stampAt = Date.now(); api.lastStampKind = kind || '';
+      stampLayer.hidden = false;
+      stampLayer.className = 'stamp-layer' + (kind ? ' k-' + kind : '');
+      var bEl = stampEl.querySelector('b'), sEl = stampEl.querySelector('span');
+      bEl.textContent = text;
+      sEl.textContent = sub || '';
+      sEl.style.display = sub ? '' : 'none';
+      /* size the sign to the text so it always fits inside the board:
+         start big, then shrink until it genuinely measures small enough
+         (the board clips at its own edge, so overflow would cut the word off) */
+      var side = boardEl.clientWidth || 400;
+      var limit = side * 0.86;
+      sEl.style.maxWidth = Math.round(side * 0.72) + 'px';
+      bEl.style.fontSize = Math.round(side * 0.16) + 'px';
+      sEl.style.fontSize = Math.round(side * 0.055) + 'px';
+      var guard = 0;
+      while (stampEl.scrollWidth > limit && guard++ < 60) {
+        var fs = parseFloat(bEl.style.fontSize) - 1;
+        if (fs < 10) break;
+        bEl.style.fontSize = fs + 'px';
+        sEl.style.fontSize = Math.max(9, fs * 0.36) + 'px';
+      }
+      /* Only animate when the sign actually CHANGES. The board repaints often
+         (every render, toast, undo…), and re-triggering the pop each time would
+         leave the sign caught mid-fade — i.e. looking see-through. */
+      var key = kind + '|' + text;
+      if (api._stampKey !== key) {
+        api._stampKey = key;
+        stampEl.classList.remove('pop'); void stampEl.offsetWidth; stampEl.classList.add('pop');
+      }
+    };
+    /* A CHECK sign should stay readable even though the opponent answers in a
+       fraction of a second, so clearing is delayed to a minimum display time. */
+    var stampAt = 0, stampTimer = null, MIN_SHOW = 1700;
+    api.clearStamp = function () {
+      if (!stampLayer) return;
+      var left = MIN_SHOW - (Date.now() - stampAt);
+      if (stampTimer) { clearTimeout(stampTimer); stampTimer = null; }
+      var hide = function () { stampLayer.hidden = true; stampEl.querySelector('b').textContent = ''; stampTimer = null; };
+      if (left > 0 && !stampLayer.hidden && api.lastStampKind === 'check') stampTimer = setTimeout(hide, left);
+      else hide();
+    };
+    api.markKing = function (sq, kind) { api.kingMark = (sq == null) ? null : { sq: sq, kind: kind || 'checked' }; };
     api.destroy = function () { try { if (api._ro) api._ro.disconnect(); } catch (e) { } clearGhost(); };
     api.promoPrompt = function (color, cb) {
       var html = '<div class="promo-box"><div class="promo-title">Promote to:</div><div class="promo-row">';

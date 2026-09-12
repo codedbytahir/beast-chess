@@ -376,6 +376,56 @@
     }
     game.log = game.log.slice(0, 24);
   }
+  /* ------------------------------------------------------------------
+     THE RESULT SIGN — a beginner must SEE the game end. A status line is
+     easy to miss, so a big CHECKMATE / CHECK / DRAW sign is stamped across
+     the board, and the king that got mated glows red.
+     ------------------------------------------------------------------ */
+  function paintResultSign() {
+    if (!board || !board.setStamp) return;
+    var r = game.result;
+    /* a position can already be finished (loaded mate, drill end, sandbox play) */
+    if (!game.over) {
+      var live = B.status(game.st);
+      if (live && live.over) r = live;
+    }
+    if (r && r.over) {
+      if (r.reason === 'checkmate') {
+        var loser = B.other(r.result);
+        var mateSq = B.findKing(game.st, loser);
+        var lastUci = game.ucis[game.ucis.length - 1];
+        board.markKing(mateSq, 'mated');
+        var youWon = (r.result === game.humanColor);
+        var who = (r.result === 'w' ? 'White' : 'Black') + ' wins.';
+        board.setStamp('Checkmate',
+          (lastUci ? 'Mate delivered with ' + (game.sans[game.sans.length - 1] || 'the last move') + '. ' : '') +
+          (game.humanColor ? (youWon ? 'You win — that is the whole object of chess!' : 'You lose — the king had no escape.') : who),
+          youWon === false && game.humanColor ? 'lose' : 'mate');
+      } else if (r.result === 'draw') {
+        board.markKing(null);
+        board.setStamp('Draw', r.reason, 'draw');
+      } else if (r.reason === 'stalemate' || (r.result === 'draw')) {
+        board.markKing(null);
+        board.setStamp('Draw', r.reason, 'draw');
+      } else {
+        board.markKing(null);
+        board.setStamp(r.result === game.humanColor ? 'You win' : 'You lose', r.reason, r.result === game.humanColor ? 'mate' : 'lose');
+      }
+      return;
+    }
+    if (B.inCheck(game.st, game.st.turn)) {
+      var kSq = B.findKing(game.st, game.st.turn);
+      board.markKing(kSq, 'checked');
+      var inDanger = game.st.turn === game.humanColor;
+      board.setStamp('Check!', inDanger
+        ? 'Your king is attacked — you MUST stop it: move the king, block the attack, or capture the attacker.'
+        : "The computer's king is attacked — it must answer right now.", 'check');
+      return;
+    }
+    board.markKing(null);
+    board.clearStamp();
+  }
+
   function paintLog() {
     var el = $('#coachLog');
     if (!el) return;
@@ -518,6 +568,7 @@
     }
     board.hints = showMe;
     board.set({ state: game.st, selected: game.selected, targets: game.targets, lastMove: game.lastMove, checkSquare: checkSq, arrows: game.hintArrow || [], hints: showMe });
+    paintResultSign();
     paintLog();
     guideTick();
     var ml = $('#moveList');
@@ -563,16 +614,28 @@
     save();
     addXp(won ? 120 : drew ? 70 : 40, won ? 'game won vs ' + levelName(game.level) : (drew ? 'draw' : 'game finished — you still learned'));
     sound(won ? 'good' : 'bad');
+    var isMate = game.result.reason === 'checkmate';
+    var lastSan = game.sans.length ? game.sans[game.sans.length - 1] : '';
+    var head = isMate
+      ? (won ? '<i class="i i-trophy"></i> Checkmate — you win!' : '<i class="i i-skull"></i> Checkmate — the computer wins')
+      : (won ? '<i class="i i-trophy"></i> Victory!' : drew ? '½–½ Draw' : '<i class="i i-skull"></i> Defeat');
+    var mateLine = isMate
+      ? '<p class="result-big">' + esc((lastSan || 'The last move') + ' was mate.') + '</p>' +
+        '<p class="result-sub">The ' + (won ? 'computer\'s' : 'your') + ' king is attacked and has nowhere to go, nothing can block and nothing can capture the attacker. That is the whole object of chess.</p>'
+      : '<p class="big">' + resultText(game.result) + '</p>';
     modal({
-      title: won ? '<i class="i i-trophy"></i> Victory!' : drew ? '½–½ Draw' : '<i class="i i-skull"></i> Defeat',
-      body: '<p class="big">' + resultText(game.result) + '</p>' +
-        '<p class="muted">' + game.sans.length + ' moves played · opponent: ' + esc(levelName(game.level)) + '</p>' +
-        '<p>The game is saved. <b>Run the Blunder Report</b> — this is where the real learning happens (Day 7 skill, use it every game).</p>',
+      title: head,
+      wide: true,
+      body: mateLine +
+        '<p class="muted">' + game.sans.length + ' move' + (game.sans.length === 1 ? '' : 's') + ' played · opponent: ' + esc(levelName(game.level)) + ' · ' +
+        (won ? '+120 XP' : drew ? '+70 XP' : '+40 XP') + '</p>' +
+        '<p><b>Look at the board behind this box</b> — the mating square is marked in red. Then run the Blunder Report: that is where the real learning happens (Day 7 skill, use it every game).</p>',
       buttons: [
-        { label: 'Run Blunder Report', cls: 'primary', onClick: function () { analyzeCurrentGame(); } },
+        (won ? { label: 'Next: harder opponent', onClick: function () { if (game.level < 5) { S.settings.level = game.level + 1; save(); } startPlayView(); } } : null),
+        { label: 'Run Blunder Report', cls: won ? '' : 'primary', onClick: function () { analyzeCurrentGame(); } },
         { label: 'Rematch', onClick: function () { startPlayView(); } },
         { label: 'Close' }
-      ]
+      ].filter(Boolean)
     });
     paintPlay();
   }
@@ -869,6 +932,8 @@
     var p = pz.list[i];
     pz.p = p; pz.solIndex = 0; pz.tries = 0; pz.attempts = 0; pz.state = B.parseFEN(p.fen);
     if (!pz.board || !pz.board.element || !pz.board.element.isConnected) return;
+    if (pz.board.markKing) pz.board.markKing(null);
+    if (pz.board.clearStamp) pz.board.clearStamp();
     pz.board.set({ state: pz.state, selected: null, targets: [], lastMove: null, arrows: [], checkSquare: null });
     pz.board.flipped = pz.state.turn === 'b';
     setText('#pzNo', i + 1);
@@ -974,6 +1039,17 @@
     addXp(pz.tries === 0 && pz.hints === 0 ? 12 : 5, 'puzzle solved');
     sound('good');
     setText('#pzOk', pz.correct); setText('#pzFt', pz.firstTry); setText('#pzSt', pz.streak);
+    /* a solved mating puzzle gets the big sign on the board too */
+    if (pz.board && pz.board.setStamp) {
+      var pzStatus = B.status(pz.state);
+      if (pzStatus.over && pzStatus.reason === 'checkmate') {
+        pz.board.markKing(B.findKing(pz.state, B.other(pzStatus.result)), 'mated');
+        pz.board.setStamp('Checkmate', 'You found it — the king is trapped. That is how games are won.', 'mate');
+      } else if (B.inCheck(pz.state, pz.state.turn)) {
+        pz.board.markKing(B.findKing(pz.state, pz.state.turn), 'checked');
+        pz.board.setStamp('Check', '', 'check');
+      }
+    }
     setHTML('#pzStatus', (oppSan ? 'His reply: <b>' + esc(oppSan) + '</b> · ' : '') + '<i class="i i-checkc"></i> <b>SOLVED</b> — ' + esc(p.motif || p.type) +
       '.<br><span class="muted">' + esc(solutionWhy(p)) + '</span>' + (p.type === 'defense' && p.evalAfter ? ' <span class="muted">(Engine: you survive at ' + p.evalAfter + ')</span>' : ''));
     setTimeout(function () { pz.i++; pzLoad(pz.i); }, 1500);
@@ -1110,6 +1186,16 @@
       buttons: [{ label: 'Retry drill', cls: 'primary', onClick: function () { startDrill(d.id); } }, { label: 'Back to lab', onClick: function () { nav('endgame'); } }]
     });
     var host = $('#gameStatus'); if (host) host.innerHTML = passed ? '<i class="i i-checkc"></i> Drill passed' : '<i class="i i-xc"></i> Drill failed — retry';
+    if (board && board.setStamp) {
+      if (passed) {
+        board.setStamp(r.reason === 'checkmate' ? 'Checkmate' : 'Drill complete',
+          d.goal === 'win' ? 'You converted the win against perfect defense — that is a tournament point.' : 'You held the draw against perfect play.', 'mate');
+        board.markKing(r.reason === 'checkmate' ? B.findKing(game.st, B.other(r.result)) : null, 'mated');
+      } else {
+        board.setStamp('Try again', 'Result: ' + r.reason + '. Read the technique, then retry — the second attempt is the one that sticks.', 'check');
+        board.markKing(null);
+      }
+    }
   }
 
   /* ============================ OPENINGS ============================ */
@@ -1661,6 +1747,8 @@
     });
     lp.state = B.parseFEN(LESSONS[idx].fen);
     lp.selected = null; lp.targets = []; lp.moved = false;
+    lp.mated = false;
+    lp.board.markKing(null); lp.board.clearStamp();
     lp.board.set({ state: lp.state });
     lp.board.dragColor = 'w';
 
@@ -1722,8 +1810,45 @@
       if (m2.castle) msg += 'You just castled — the king is safe and the rook is active. Well done!';
       else if (m2.promo) msg += 'Promotion! Your pawn became a queen.';
       else if (m2.captured) msg += 'Nice — you captured the ' + pieceName(m2.captured) + '.';
-      else if (B.inCheck(lp.state, lp.state.turn)) msg += 'Check! Their king must deal with that.';
       else msg += 'Keep experimenting — try the other pieces too.';
+
+      /* --- did that move end the game? say so LOUDLY --- */
+      var stt = B.status(lp.state);
+      var movingSide = p[0];
+      if (stt.over && stt.reason === 'checkmate') {
+        var winner = stt.result;
+        var deadKing = B.findKing(lp.state, B.other(winner));
+        lp.board.markKing(deadKing, 'mated');
+        lp.board.setStamp('Checkmate', (winner === 'w' ? 'White' : 'Black') + ' wins — the ' + (B.other(winner) === 'w' ? 'white' : 'black') + ' king has no escape.', 'mate');
+        msg = san + ' is checkmate! The enemy king is attacked and cannot move, block or capture. That is how you win.';
+        sound('good');
+        if (!lp.mated) {
+          lp.mated = true; addXp(20, 'found a checkmate in the lesson sandbox');
+          modal({
+            title: '<i class="i i-trophy"></i> Checkmate! You win',
+            wide: true,
+            body: '<p class="result-big">' + esc(san) + ' — the king cannot escape.</p>' +
+              '<p class="result-sub">Look at the red square on the board: that is the trapped king. It is attacked, and every square it could run to is covered, nothing can block the attack, and nothing can capture the attacker.</p>' +
+              '<p><b>You never capture a king in chess</b> — you checkmate it. The game is over the moment it is trapped like this.</p>',
+            buttons: [
+              (lp.i < LESSONS.length - 1 ? { label: 'Next lesson', cls: 'primary', onClick: function () { nav('learn', 'lesson=' + (lp.i + 1)); } } : null),
+              { label: 'Reset this position', onClick: function () { nav('learn', 'lesson=' + lp.i); } },
+              { label: 'Keep exploring', onClick: function () { } }
+            ].filter(Boolean)
+          });
+        }
+      } else if (stt.over) {
+        lp.board.markKing(null);
+        lp.board.setStamp('Draw', stt.reason, 'draw');
+        msg = san + ' — that is a draw (' + stt.reason + '). Nobody wins.';
+      } else if (B.inCheck(lp.state, lp.state.turn)) {
+        lp.board.markKing(B.findKing(lp.state, lp.state.turn), 'checked');
+        lp.board.setStamp('Check!', (movingSide === 'w' ? 'Black' : 'White') + ' must get out of check now — move the king, block, or capture the attacker.', 'check');
+        msg += ' Check! Their king is attacked.';
+      } else {
+        lp.board.markKing(null);
+        lp.board.clearStamp();
+      }
       var hint = $('#lessonHint'); if (hint) hint.innerHTML = '<i class="i i-checkc"></i> ' + esc(msg);
       if (!lp.moved) { lp.moved = true; addXp(10, 'practised: ' + LESSONS[lp.i].title); }
     };
@@ -2194,6 +2319,17 @@
       pzAttempt(m.from, m.to); return 'ok';
     }, engineMove: function () { engineMove(); }, newGame: function (o) { newGame(o); },
     startGuided: function () { startGuidedGame(); }, guided: function () { return game && game.guide; },
+    setPosition: function (fen, color) {
+      game.st = B.parseFEN(fen);
+      game.humanColor = color || game.st.turn;
+      game.over = false; game.result = null; game.sans = []; game.ucis = []; game.fens = [fen];
+      game.selected = null; game.targets = []; game.lastMove = null; game.hintArrow = []; game.thinking = false;
+      if (game.guide) game.guide = { step: 0, done: false };
+      paintPlay();
+      return 'ok';
+    },
+    stamp: function () { var e = document.querySelector('.stamp b'); return e ? e.textContent : null; },
+    kings: function () { return game.st.board.filter(function (p) { return p && p[1].toLowerCase() === 'k'; }).length; },
     suggest: function () { return suggestMove(game.st, game.humanColor); }
   };
   boot();

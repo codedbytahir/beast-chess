@@ -1,6 +1,6 @@
 {
   "name": "beast-chess",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Beast Chess — a 7-day zero-to-hero chess crash course in one self-contained HTML file (beginner lessons, AI opponent, 343 puzzles, drills).",
   "private": true,
   "scripts": {
