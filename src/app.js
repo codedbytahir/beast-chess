@@ -1643,6 +1643,7 @@
       '<div class="row gap wrap" style="margin-top:12px">' +
       (idx > 0 ? '<button class="btn sm" id="lPrev"><i class="i i-chevL"></i> Previous</button>' : '') +
       (idx < LESSONS.length - 1 ? '<button class="btn sm primary" id="lNext">Next lesson <i class="i i-chevR"></i></button>' : '') +
+      (isRead() ? '' : '<button class="btn sm" id="lDone"><i class="i i-check"></i> I have read this (+15 XP)</button>') +
       '<button class="btn sm" id="lGuided"><i class="i i-gamepad"></i> Start guided first game</button>' +
       '<button class="btn sm" id="lPractice"><i class="i i-puzzle"></i> 3 easy mate-in-1 puzzles</button>' +
       '</div>' +
@@ -1663,16 +1664,29 @@
     lp.board.set({ state: lp.state });
     lp.board.dragColor = 'w';
 
-    var L = LESSONS[idx];
-    if (!(S.lessons || {})[L.id]) { S.lessons = S.lessons || {}; S.lessons[L.id] = true; save(); addXp(15, 'lesson read: ' + L.title); }
+    /* A lesson only counts as read once the student engages with it (moves a
+       piece in the sandbox or presses a button). Merely opening the page used
+       to mark it read and award XP, which made the checkmarks — and the
+       "resume where I left off" pointer — misleading. */
+    function isRead() { return !!(S.lessons || {})[LESSONS[idx].id]; }
+    function markRead() {
+      var L = LESSONS[idx];
+      if (isRead()) return;
+      S.lessons = S.lessons || {}; S.lessons[L.id] = true; save();
+      addXp(15, 'lesson read: ' + L.title);
+      var d = $('#lDone'); if (d) d.remove();
+    }
+    lp.markRead = markRead;
     $$('#lessonNav .lchip', view).forEach(function (b) {
       b.addEventListener('click', function () { nav('learn', 'lesson=' + b.getAttribute('data-lesson')); });
     });
     $('#btnGloss').addEventListener('click', glossaryModal);
-    if ($('#lPrev')) $('#lPrev').addEventListener('click', function () { nav('learn', 'lesson=' + (idx - 1)); });
+    if ($('#lNext')) $('#lNext').addEventListener('click', markRead);
+    if ($('#lPrev')) $('#lPrev').addEventListener('click', function () { markRead(); nav('learn', 'lesson=' + (idx - 1)); });
     if ($('#lNext')) $('#lNext').addEventListener('click', function () { nav('learn', 'lesson=' + (idx + 1)); });
-    $('#lGuided').addEventListener('click', function () { nav('play'); setTimeout(startGuidedGame, 250); });
-    $('#lPractice').addEventListener('click', function () { nav('puzzles', 'mode=mate1&n=3'); });
+    if ($('#lDone')) $('#lDone').addEventListener('click', function () { markRead(); toast('+15 XP — lesson read: ' + LESSONS[idx].title, 'xp', 2000); });
+    $('#lGuided').addEventListener('click', function () { markRead(); nav('play'); setTimeout(startGuidedGame, 250); });
+    $('#lPractice').addEventListener('click', function () { markRead(); nav('puzzles', 'mode=mate1&n=3'); });
   }
   function firstUnfinishedLesson() {
     for (var i = 0; i < LESSONS.length; i++) if (!(S.lessons || {})[LESSONS[i].id]) return i;
@@ -1691,6 +1705,7 @@
     } else { lp.selected = null; lp.targets = []; lp.board.set({ selected: null, targets: [] }); }
   }
   function lessonMove(from, to) {
+    if (lp.markRead) lp.markRead();          /* touching the pieces = engagement */
     var st = lp.state, p = st.board[from];
     var work = B.clone(st); work.turn = p[0];
     var cands = B.legalMoves(work).filter(function (m) { return m.from === from && m.to === to; });

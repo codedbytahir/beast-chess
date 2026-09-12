@@ -1,5 +1,18 @@
 {
-  "dependencies": {
+  "name": "beast-chess",
+  "version": "1.0.0",
+  "description": "Beast Chess — a 7-day zero-to-hero chess crash course in one self-contained HTML file (beginner lessons, AI opponent, 343 puzzles, drills).",
+  "private": true,
+  "scripts": {
+    "test": "node tests/perft.js && node tools/gen-content.js",
+    "test:e2e": "node tests/e2e.js",
+    "build": "node tools/build.js",
+    "site": "node tools/site.js",
+    "deploy": "node tools/build.js && node tools/site.js",
+    "start": "node -e \"const http=require('http'),fs=require('fs');http.createServer((q,s)=>{const f=q.url==='/'?'index.html':q.url.slice(1);try{s.end(fs.readFileSync(f))}catch(e){s.statusCode=404;s.end('404')}}).listen(8080,()=>console.log('http://localhost:8080'))\""
+  },
+  "devDependencies": {
     "puppeteer": "^24.43.1"
-  }
+  },
+  "license": "MIT"
 }

@@ -23,7 +23,7 @@ Everything runs in **one self-contained HTML file**. No signup, no server, no CD
 | 🪤 **Traps** | 10 classic traps (Scholar's, Fool's, Legal's, Stafford, Englund…) with the antidote for each. |
 | ⚔ **Playbook** | The strategy codex: 6-question blunder firewall, pawn structures, king safety, converting wins. |
 | 🗓 **7-Day Plan** | Day-by-day syllabus with sessions, KPIs and homework. |
-| 📈 **Progress** | XP, ranks, streaks, lesson completion, and a post-game blunder report. |
+| 📈 **Progress** | XP, ranks, streaks, lesson completion, and a post-game blunder report. A lesson only counts as read (and only pays XP) once you actually engage with it — move a piece in the sandbox or press "I have read this" — so the checkmarks and the "resume where I left off" pointer stay honest. |
 
 ## Start here
 1. Open the live site and press **Start training**.
@@ -56,17 +56,18 @@ index.html, play.html ← generated: the published GitHub Pages site
 ## Rebuilding
 
 ```bash
-node tests/perft.js        # engine correctness — expect ALL PERFT TESTS PASS
-node tools/gen-content.js  # content validation — expect PROBLEMS: 0
-node tools/build.js        # → beast-chess.html
-node tools/site.js         # → index.html (landing) + play.html (the app)
+npm test            # engine perft suite + content validation
+npm run test:e2e    # 26-check browser regression suite (needs: npm i puppeteer)
+npm run deploy      # rebuild beast-chess.html + regenerate the published pages
+npm start           # serve the site locally on :8080
 ```
 
 ## How it was verified
 
 The app ships with a regression suite that drives a real browser with real mouse, touch and pointer events:
 
-- **perft** move-generation tests — all pass (start position, Kiwipete, position 3, 4)
+- **`npm test`** — perft move-generation tests all pass (start position, Kiwipete, position 3, 4); content validation reports 0 problems
+- **`npm run test:e2e`** — 26 checks in a real browser: onboarding wizard, lesson sandboxes, the icon system (every icon painted by an SVG mask), playing a legal move with real pointer events, engine reply, coach log, board squareness, guided-game step advance, all 10 views, easiest-first puzzle ordering, XP persistence across reload, deep links, and touch play on a phone — **0 failures, 0 page errors**
 - **Content**: 0 problems across all lessons, traps, openings and drills
 - **Board geometry**: pixel-perfect square board + 64 square cells at 8 viewports (320×560 → 1920×1080), zero page overflow
 - **Flows**: beginner wizard → lessons → guided game → play → all 4 puzzle modes → endgame drills → traps → opening quiz → plan/XP persistence → PGN export — with 0 page errors
